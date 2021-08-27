@@ -4,10 +4,11 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
+import javax.validation.Valid;
+
 import org.mapstruct.factory.Mappers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
 
 import silent_bard.personapi.dto.PersonDTO;
 import silent_bard.personapi.entity.Person;
@@ -22,21 +23,33 @@ public class PersonService {
 
     private final PersonMapper personMapper = Mappers.getMapper(PersonMapper.class);
     
-    public PersonDTO createPerson(PersonDTO personDTO) {
-        
+    public PersonDTO savePerson(PersonDTO personDTO) {
         Person person = personMapper.toModel(personDTO);
         person = personRepository.save(person);
         return personMapper.toDTO(person);
-    }
+    } 
 
-    @GetMapping
     public List<PersonDTO> listAll() {
         List<Person> allPeople = personRepository.findAll();
         return allPeople.stream().map(personMapper::toDTO).collect(Collectors.toList());
     }
 
     public PersonDTO findById(Long id) {
-        Person person = personRepository.findById(id).orElseThrow(() -> new NoSuchElementException());
+        Person person = verifyIfExists(id);
         return personMapper.toDTO(person);
-    } 
+    }
+
+    public void deleteById(Long id) {
+        verifyIfExists(id);
+        personRepository.deleteById(id);
+    }
+
+    public PersonDTO updateById(Long id, @Valid PersonDTO personDTO) {
+        verifyIfExists(id);
+        return savePerson(personDTO);
+    }
+
+    private Person verifyIfExists(Long id) {
+        return personRepository.findById(id).orElseThrow(() -> new NoSuchElementException());
+    }
 }
